@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内容监控雷达 - 治愈系版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'matcha': '#708C69',
+                        'matcha-light': '#EAF0E8',
+                        'cream': '#FDF8E4',
+                        'cheese': '#F7DCA0',
+                        'cheese-light': '#FDF3DF',
+                        'border-soft': '#E8E3D1'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="flex h-screen bg-cream text-gray-800 overflow-hidden">
+
+    <!-- 左侧：分类管理侧边栏 -->
+    <aside class="w-64 bg-white border-r border-border-soft flex flex-col z-10 shadow-[4px_0_24px_rgba(112,140,105,0.05)]">
+        <div class="p-6 border-b border-border-soft">
+            <h1 class="text-xl font-bold text-gray-800 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-matcha flex items-center justify-center text-white">
+                    <i data-lucide="leaf" class="w-5 h-5"></i>
+                </div>
+                内容监控雷达
+            </h1>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-4">
+            <div class="text-xs font-bold text-matcha/60 mb-3 uppercase tracking-wider ml-2">监控分类</div>
+            <div class="space-y-2" id="category-list">
+                <button onclick="switchCategory(this)" class="category-btn w-full text-left px-4 py-3.5 rounded-2xl transition-all flex items-center gap-3 bg-matcha text-white font-medium shadow-md shadow-matcha/20">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span class="truncate">ClaudeCode 选题</span>
+                </button>
+                <button onclick="switchCategory(this)" class="category-btn w-full text-left px-4 py-3.5 rounded-2xl transition-all flex items-center gap-3 text-gray-600 hover:bg-matcha-light hover:text-matcha">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span class="truncate">VibeCoding 选题</span>
+                </button>
+            </div>
+            
+            <button class="w-full mt-6 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-matcha/30 text-matcha rounded-2xl hover:bg-matcha-light transition-colors text-sm font-medium">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                新建监控分类
+            </button>
+        </div>
+        
+        <div class="p-4 border-t border-border-soft text-xs text-gray-400 text-center bg-white">
+            每天 02:00 自动采集数据
+        </div>
+    </aside>
+
+    <!-- 右侧：主内容区 -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- 顶部 Header -->
+        <header class="bg-white/80 backdrop-blur-md border-b border-border-soft px-8 py-5 flex justify-between items-center shrink-0 z-10">
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                ClaudeCode 选题监控
+                <span class="px-2.5 py-1 bg-cheese-light text-yellow-800 text-xs rounded-lg border border-cheese/50 font-medium">运行中</span>
+            </h2>
+            
+            <div class="flex gap-1 bg-cream/60 p-1.5 rounded-2xl border border-border-soft/80" id="main-tabs">
+                <button onclick="switchMainTab('content')" class="main-tab-btn flex items-center gap-2 py-2 px-5 rounded-xl transition-all bg-white text-matcha font-bold shadow-sm border border-border-soft/50" data-target="content">
+                    内容大盘
+                </button>
+                <button onclick="switchMainTab('report')" class="main-tab-btn flex items-center gap-2 py-2 px-5 rounded-xl transition-all bg-transparent text-gray-500 hover:text-matcha font-medium" data-target="report">
+                    选题分析
+                </button>
+                <button onclick="switchMainTab('settings')" class="main-tab-btn flex items-center gap-2 py-2 px-5 rounded-xl transition-all bg-transparent text-gray-500 hover:text-matcha font-medium" data-target="settings">
+                    监控设置
+                </button>
+            </div>
+        </header>
+
+        <!-- Tab 内容渲染区 -->
+        <div class="flex-1 overflow-y-auto p-8 relative">
+            
+            <!-- ========================================== -->
+            <!-- Tab 1: 内容大盘 -->
+            <!-- ========================================== -->
+            <div id="tab-content" class="tab-pane max-w-6xl mx-auto space-y-6 block">
+                <!-- 1. 七天时间线 -->
+                <div>
+                    <h3 class="text-sm font-bold text-matcha/70 mb-3 ml-1">时间线浏览 (近7天)</h3>
+                    <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar" id="date-cards">
+                        <button onclick="switchDateCard(this)" class="date-card flex-shrink-0 flex flex-col items-start p-4 rounded-2xl border-2 min-w-[120px] transition-all border-matcha bg-matcha-light text-matcha shadow-sm">
+                            <div class="flex items-center justify-between w-full mb-1">
+                                <span class="text-sm font-bold">今天</span><span class="flex w-2.5 h-2.5 rounded-full bg-[#E57A7A] border border-white"></span>
+                            </div>
+                            <div class="text-xs font-medium opacity-80">05-20</div>
+                            <div class="mt-2 text-2xl font-black">156 <span class="text-xs font-medium opacity-70">条</span></div>
+                        </button>
+                        <button onclick="switchDateCard(this)" class="date-card flex-shrink-0 flex flex-col items-start p-4 rounded-2xl border-2 min-w-[120px] transition-all border-white bg-white text-gray-500 hover:border-matcha/30 hover:shadow-sm">
+                            <div class="flex items-center justify-between w-full mb-1"><span class="text-sm font-bold">昨天</span></div>
+                            <div class="text-xs font-medium opacity-60">05-19</div>
+                            <div class="mt-2 text-2xl font-black">132 <span class="text-xs font-medium opacity-70">条</span></div>
+                        </button>
+                        <button onclick="switchDateCard(this)" class="date-card flex-shrink-0 flex flex-col items-start p-4 rounded-2xl border-2 min-w-[120px] transition-all border-white bg-white text-gray-500 hover:border-matcha/30 hover:shadow-sm">
+                            <div class="flex items-center justify-between w-full mb-1"><span class="text-sm font-bold">周一</span></div>
+                            <div class="text-xs font-medium opacity-60">05-18</div>
+                            <div class="mt-2 text-2xl font-black">85 <span class="text-xs font-medium opacity-70">条</span></div>
+                        </button>
+                        <button onclick="switchDateCard(this)" class="date-card flex-shrink-0 flex flex-col items-start p-4 rounded-2xl border-2 min-w-[120px] transition-all border-white bg-white text-gray-500 hover:border-matcha/30 hover:shadow-sm">
+                            <div class="flex items-center justify-between w-full mb-1"><span class="text-sm font-bold">周日</span><span class="flex w-2.5 h-2.5 rounded-full bg-[#E57A7A] border border-white"></span></div>
+                            <div class="text-xs font-medium opacity-60">05-17</div>
+                            <div class="mt-2 text-2xl font-black">128 <span class="text-xs font-medium opacity-70">条</span></div>
+                        </button>
+                        <button onclick="switchDateCard(this)" class="date-card flex-shrink-0 flex flex-col items-start p-4 rounded-2xl border-2 min-w-[120px] transition-all border-white bg-white text-gray-500 hover:border-matcha/30 hover:shadow-sm">
+                            <div class="flex items-center justify-between w-full mb-1"><span class="text-sm font-bold">周六</span></div>
+                            <div class="text-xs font-medium opacity-60">05-16</div>
+                            <div class="mt-2 text-2xl font-black">94 <span class="text-xs font-medium opacity-70">条</span></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. 三维筛选区 -->
+                <div class="bg-white/80 p-6 rounded-3xl border border-border-soft backdrop-blur-sm shadow-sm flex flex-col">
+                    <div class="flex items-center gap-4 py-3 border-b border-dashed border-gray-200">
+                        <div class="text-sm font-bold text-gray-500 w-16 shrink-0">监控平台</div>
+                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1" id="filter-platform">
+                            <button onclick="switchFilter(this, 'platform')" class="filter-btn-platform px-4 py-1.5 rounded-full text-sm font-bold transition-all bg-matcha text-white border border-matcha shadow-md shadow-matcha/20 shrink-0">全部</button>
+                            <button onclick="switchFilter(this, 'platform')" class="filter-btn-platform px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">公众号</button>
+                            <button onclick="switchFilter(this, 'platform')" class="filter-btn-platform px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">小红书</button>
+                            <button onclick="switchFilter(this, 'platform')" class="filter-btn-platform px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">抖音</button>
+                            <button onclick="switchFilter(this, 'platform')" class="filter-btn-platform px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">B站</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 py-3 border-b border-dashed border-gray-200">
+                        <div class="text-sm font-bold text-gray-500 w-16 shrink-0">包含词汇</div>
+                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1" id="filter-keyword">
+                            <button onclick="switchFilter(this, 'keyword')" class="filter-btn-keyword px-4 py-1.5 rounded-full text-sm font-bold transition-all bg-matcha text-white border border-matcha shadow-md shadow-matcha/20 shrink-0">全部</button>
+                            <button onclick="switchFilter(this, 'keyword')" class="filter-btn-keyword px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">Claude</button>
+                            <button onclick="switchFilter(this, 'keyword')" class="filter-btn-keyword px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">克劳德</button>
+                            <button onclick="switchFilter(this, 'keyword')" class="filter-btn-keyword px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">Cursor</button>
+                            <button onclick="switchFilter(this, 'keyword')" class="filter-btn-keyword px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">AI代码</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 py-3">
+                        <div class="text-sm font-bold text-gray-500 w-16 shrink-0">对标账号</div>
+                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1" id="filter-account">
+                            <button onclick="switchFilter(this, 'account')" class="filter-btn-account px-4 py-1.5 rounded-full text-sm font-bold transition-all bg-matcha text-white border border-matcha shadow-md shadow-matcha/20 shrink-0">全部</button>
+                            <button onclick="switchFilter(this, 'account')" class="filter-btn-account px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">极客时间</button>
+                            <button onclick="switchFilter(this, 'account')" class="filter-btn-account px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">程序员老王</button>
+                            <button onclick="switchFilter(this, 'account')" class="filter-btn-account px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0">AI前沿观察</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容列表 -->
+                <div class="bg-white rounded-3xl border border-border-soft shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-border-soft flex justify-between items-center bg-cream/30">
+                        <span class="text-sm font-bold text-gray-600">为您找到 <span class="text-matcha text-lg">156</span> 条热门内容</span>
+                        <button class="text-sm font-medium text-matcha hover:underline flex items-center gap-1">导出数据</button>
+                    </div>
+                    <div class="divide-y divide-border-soft/60">
+                        <div class="p-6 hover:bg-matcha-light/30 transition-colors flex items-start gap-5">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#E7F3E9] text-[#2BA245] border border-[#2BA245]/20">公众号</span>
+                                    <span class="text-xs font-medium text-gray-400">2026-05-20 10:30</span>
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-2 cursor-pointer hover:text-matcha transition-colors">深度解析：Claude 3.5 Sonnet 如何重塑开发者的工作流？</h4>
+                                <div class="flex items-center gap-5 text-sm text-gray-500 font-medium">
+                                    <span class="flex items-center gap-1.5"><i data-lucide="pen-tool" class="w-4 h-4 text-cheese"></i> 极客时间</span>
+                                    <span class="flex items-center gap-1.5"><i data-lucide="eye" class="w-4 h-4"></i> 10w+</span>
+                                    <span class="flex items-center gap-1.5"><i data-lucide="thumbs-up" class="w-4 h-4"></i> 3250</span>
+                                </div>
+                            </div>
+                            <button class="px-4 py-2 text-sm font-bold border-2 border-border-soft rounded-xl text-gray-600 hover:border-matcha hover:text-matcha transition-all">阅读原文</button>
+                        </div>
+                        <div class="p-6 hover:bg-matcha-light/30 transition-colors flex items-start gap-5">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FDECECF0] text-[#FF2442] border border-[#FF2442]/20">小红书</span>
+                                    <span class="text-xs font-medium text-gray-400">2026-05-20 09:15</span>
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-2 cursor-pointer hover:text-matcha transition-colors">Claude 3.5 Sonnet 更新了！代码能力实测太强了</h4>
+                                <div class="flex items-center gap-5 text-sm text-gray-500 font-medium">
+                                    <span class="flex items-center gap-1.5"><i data-lucide="user" class="w-4 h-4 text-cheese"></i> AI前沿观察</span>
+                                    <span class="flex items-center gap-1.5"><i data-lucide="heart" class="w-4 h-4"></i> 1.2w</span>
+                                </div>
+                            </div>
+                            <button class="px-4 py-2 text-sm font-bold border-2 border-border-soft rounded-xl text-gray-600 hover:border-matcha hover:text-matcha transition-all">查看原文</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- Tab 2: 选题分析 -->
+            <!-- ========================================== -->
+            <div id="tab-report" class="tab-pane max-w-6xl mx-auto h-full flex flex-col hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="bg-white p-1.5 rounded-2xl flex gap-1 w-fit border border-border-soft shadow-sm">
+                        <button onclick="switchReportView('timeline')" id="view-btn-timeline" class="px-5 py-2 rounded-xl text-sm font-bold transition-all bg-cheese text-yellow-900 shadow-sm">按时间线查看</button>
+                        <button onclick="switchReportView('grid')" id="view-btn-grid" class="px-5 py-2 rounded-xl text-sm font-bold transition-all text-gray-500 hover:text-gray-800 hover:bg-cream">近期选题汇总库</button>
+                    </div>
+                </div>
+
+                <div id="report-view-timeline" class="flex gap-8 items-start">
+                    <div class="w-1/3 space-y-6 relative before:absolute before:top-0 before:bottom-0 before:left-6 before:-translate-x-px before:w-0.5 before:bg-gradient-to-b before:from-border-soft before:via-border-soft before:to-transparent" id="report-timeline">
+                        <div onclick="switchReportTimeline(this, '2026-05-20')" class="report-node relative flex items-start gap-4 group cursor-pointer">
+                            <div class="node-icon flex items-center justify-center w-12 h-12 rounded-full border-4 border-cream shrink-0 shadow-md bg-matcha text-white z-10 relative">
+                                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                            </div>
+                            <div class="node-card flex-1 p-5 rounded-2xl border-2 transition-all border-matcha bg-white shadow-sm mt-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-base font-black text-matcha">05月20日</div>
+                                    <span class="badge px-2 py-0.5 bg-matcha-light text-matcha text-xs font-bold rounded-lg border border-matcha/20">2个选题</span>
+                                </div>
+                                <div class="text-sm text-gray-600 line-clamp-2 font-medium mb-3">今日热点聚焦于 Claude 3.5 的代码能力实测及与 Cursor 的对比...</div>
+                            </div>
+                        </div>
+                        <div onclick="switchReportTimeline(this, '2026-05-19')" class="report-node relative flex items-start gap-4 group cursor-pointer">
+                            <div class="node-icon flex items-center justify-center w-12 h-12 rounded-full border-4 border-cream shrink-0 shadow-sm bg-white text-gray-400 z-10 relative">
+                                <i data-lucide="calendar" class="w-5 h-5"></i>
+                            </div>
+                            <div class="node-card flex-1 p-5 rounded-2xl border-2 transition-all border-border-soft bg-white hover:border-matcha/40 mt-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="text-base font-bold text-gray-800">05月19日</div>
+                                    <span class="badge px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-bold rounded-lg border border-gray-200">1个选题</span>
+                                </div>
+                                <div class="text-sm text-gray-500 line-clamp-2 font-medium mb-3">昨日热点主要围绕“独立开发者如何利用 AI 变现”...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="report-detail-container" class="w-2/3 bg-white rounded-3xl border-2 border-border-soft shadow-sm p-8 relative overflow-hidden fade-in">
+                        <!-- JS 动态注入 -->
+                    </div>
+                </div>
+
+                <div id="report-view-grid" class="grid grid-cols-2 gap-6 hidden">
+                    <div class="bg-white border-2 border-border-soft rounded-3xl p-6 shadow-sm hover:border-matcha/50 transition-colors">
+                        <h5 class="text-lg font-bold text-gray-800 mb-4">实战向：用 Claude Code 10分钟复刻小游戏</h5>
+                        <ul class="space-y-3 text-sm text-gray-600 font-medium">
+                            <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-matcha mt-1.5"></div><span class="flex-1">用户对纯理论评测疲劳，想看实际效果。</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- Tab 3: 监控设置 -->
+            <!-- ========================================== -->
+            <div id="tab-settings" class="tab-pane max-w-4xl mx-auto bg-white rounded-3xl border-2 border-border-soft shadow-sm p-10 hidden">
+                <div class="mb-10 border-b border-border-soft pb-6 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-matcha-light flex items-center justify-center text-matcha">
+                        <i data-lucide="settings-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-gray-800 mb-1">监控规则配置</h3>
+                        <p class="text-sm font-medium text-gray-500">配置该分类下需要爬取和分析的平台、关键词与对标账号。</p>
+                    </div>
+                </div>
+
+                <div class="space-y-12">
+                    <!-- 1. 监控平台 (动态增删) -->
+                    <section>
+                        <h4 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                            <div class="w-2 h-6 bg-cheese rounded-full"></div>监控平台
+                        </h4>
+                        <div class="bg-cream p-6 rounded-3xl border border-border-soft">
+                            <div class="flex gap-3 mb-5">
+                                <input type="text" id="new-platform-input" placeholder="输入需要监控的平台，例如：知乎" class="flex-1 px-5 py-3 border-2 border-white rounded-xl text-sm font-medium focus:outline-none focus:border-matcha bg-white shadow-sm" />
+                                <button onclick="addPlatform()" class="px-6 py-3 bg-matcha text-white rounded-xl text-sm font-bold hover:bg-matcha/90 shadow-md shadow-matcha/20 transition-all">添加</button>
+                            </div>
+                            <div class="flex flex-wrap gap-3" id="platform-list">
+                                <span class="group inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-soft rounded-xl text-sm font-bold text-gray-700 shadow-sm cursor-pointer hover:border-red-300 hover:text-red-500 transition-colors" onclick="this.remove()">
+                                    公众号 <i data-lucide="x" class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors"></i>
+                                </span>
+                                <span class="group inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-soft rounded-xl text-sm font-bold text-gray-700 shadow-sm cursor-pointer hover:border-red-300 hover:text-red-500 transition-colors" onclick="this.remove()">
+                                    小红书 <i data-lucide="x" class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors"></i>
+                                </span>
+                                <span class="group inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-soft rounded-xl text-sm font-bold text-gray-700 shadow-sm cursor-pointer hover:border-red-300 hover:text-red-500 transition-colors" onclick="this.remove()">
+                                    抖音 <i data-lucide="x" class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 2. 监控关键词 -->
+                    <section>
+                        <h4 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                            <div class="w-2 h-6 bg-cheese rounded-full"></div>监控关键词
+                        </h4>
+                        <div class="bg-cream p-6 rounded-3xl border border-border-soft">
+                            <div class="flex gap-3 mb-5">
+                                <input type="text" id="new-keyword-input" placeholder="输入包含的关键词，例如：AI编程" class="flex-1 px-5 py-3 border-2 border-white rounded-xl text-sm font-medium focus:outline-none focus:border-matcha bg-white shadow-sm" />
+                                <button onclick="addKeyword()" class="px-6 py-3 bg-matcha text-white rounded-xl text-sm font-bold hover:bg-matcha/90 shadow-md shadow-matcha/20 transition-all">添加</button>
+                            </div>
+                            <div class="flex flex-wrap gap-3" id="keyword-list">
+                                <span class="group inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-soft rounded-xl text-sm font-bold text-gray-700 shadow-sm cursor-pointer hover:border-red-300 hover:text-red-500 transition-colors" onclick="this.remove()">
+                                    Claude <i data-lucide="x" class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors"></i>
+                                </span>
+                                <span class="group inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-soft rounded-xl text-sm font-bold text-gray-700 shadow-sm cursor-pointer hover:border-red-300 hover:text-red-500 transition-colors" onclick="this.remove()">
+                                    Cursor <i data-lucide="x" class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 3. 监控账号 -->
+                    <section>
+                        <h4 class="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
+                            <div class="w-2 h-6 bg-cheese rounded-full"></div>监控账号
+                        </h4>
+                        <div class="bg-cream p-6 rounded-3xl border border-border-soft">
+                            <div class="flex gap-3 mb-5">
+                                <select id="new-account-platform" class="px-5 py-3 border-2 border-white rounded-xl text-sm font-bold bg-white focus:outline-none focus:border-matcha shadow-sm text-gray-700">
+                                    <option>公众号</option>
+                                    <option>小红书</option>
+                                    <option>B站</option>
+                                </select>
+                                <input type="text" id="new-account-input" placeholder="输入主页链接或账号名" class="flex-1 px-5 py-3 border-2 border-white rounded-xl text-sm font-medium focus:outline-none focus:border-matcha bg-white shadow-sm" />
+                                <button onclick="addAccount()" class="px-6 py-3 bg-matcha text-white rounded-xl text-sm font-bold hover:bg-matcha/90 shadow-md shadow-matcha/20 transition-all">添加账号</button>
+                            </div>
+                            <div class="space-y-3" id="account-list">
+                                <div class="account-item flex items-center justify-between p-4 bg-white border border-border-soft rounded-2xl shadow-sm">
+                                    <div class="flex items-center gap-4">
+                                        <span class="px-3 py-1 bg-[#E7F3E9] text-[#2BA245] text-xs font-bold rounded-lg border border-[#2BA245]/20">公众号</span>
+                                        <span class="text-base font-bold text-gray-800">极客时间</span>
+                                    </div>
+                                    <button onclick="this.closest('.account-item').remove()" class="text-gray-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="mt-12 pt-8 border-t border-border-soft flex justify-end">
+                    <button class="px-8 py-3.5 bg-matcha text-white rounded-2xl text-base font-bold shadow-lg shadow-matcha/30 hover:bg-matcha/90 flex items-center gap-2 transition-all transform hover:-translate-y-0.5">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        保存配置
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- JavaScript 逻辑 -->
+    <script>
+        // 初始化 Lucide 图标
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+            renderReportDetail('2026-05-20');
+        });
+
+        // ==========================================
+        // 0. 左侧侧边栏：分类切换
+        // ==========================================
+        function switchCategory(clickedBtn) {
+            var container = document.getElementById('category-list');
+            container.querySelectorAll('.category-btn').forEach(function(btn) {
+                btn.className = 'category-btn w-full text-left px-4 py-3.5 rounded-2xl transition-all flex items-center gap-3 text-gray-600 hover:bg-matcha-light hover:text-matcha';
+            });
+            clickedBtn.className = 'category-btn w-full text-left px-4 py-3.5 rounded-2xl transition-all flex items-center gap-3 bg-matcha text-white font-medium shadow-md shadow-matcha/20';
+        }
+
+        // ==========================================
+        // 1. 顶层 Tab 切换
+        // ==========================================
+        function switchMainTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(function(el) {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+            });
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-' + tabId).classList.add('block');
+
+            document.querySelectorAll('.main-tab-btn').forEach(function(btn) {
+                if (btn.dataset.target === tabId) {
+                    btn.className = 'main-tab-btn flex items-center gap-2 py-2 px-5 rounded-xl transition-all bg-white text-matcha font-bold shadow-sm border border-border-soft/50';
+                } else {
+                    btn.className = 'main-tab-btn flex items-center gap-2 py-2 px-5 rounded-xl transition-all bg-transparent text-gray-500 hover:text-matcha font-medium';
+                }
+            });
+        }
+
+        // ==========================================
+        // 2. 内容大盘交互
+        // ==========================================
+        function switchDateCard(clickedBtn) {
+            var container = document.getElementById('date-cards');
+            container.querySelectorAll('.date-card').forEach(function(btn) {
+                btn.className = 'date-card flex-shrink-0 flex flex-col items-start p-4 rounded-2xl border-2 min-w-[120px] transition-all border-white bg-white text-gray-500 hover:border-matcha/30 hover:shadow-sm';
+                btn.querySelector('.text-xs').classList.replace('opacity-80', 'opacity-60');
+            });
+            clickedBtn.className = 'date-card flex-shrink-0 flex flex-col items-start p-4 rounded-2xl border-2 min-w-[120px] transition-all border-matcha bg-matcha-light text-matcha shadow-sm';
+            clickedBtn.querySelector('.text-xs').classList.replace('opacity-60', 'opacity-80');
+        }
+
+        function switchFilter(clickedBtn, type) {
+            var container = document.getElementById('filter-' + type);
+            container.querySelectorAll('.filter-btn-' + type).forEach(function(btn) {
+                btn.className = 'filter-btn-' + type + ' px-4 py-1.5 rounded-full text-sm font-medium transition-all bg-white border border-gray-200 text-gray-600 hover:border-matcha hover:text-matcha shrink-0';
+            });
+            clickedBtn.className = 'filter-btn-' + type + ' px-4 py-1.5 rounded-full text-sm font-bold transition-all bg-matcha text-white border border-matcha shadow-md shadow-matcha/20 shrink-0';
+        }
+
+        // ==========================================
+        // 3. 报告页面交互 & 假数据渲染
+        // ==========================================
+        var reportData = {
+            '2026-05-20': {
+                dateStr: '05月20日',
+                summary: '今日热点聚焦于 Claude 3.5 的代码能力实测及与 Cursor 的对比，用户对“零代码/低代码开发”情绪高涨。',
+                topics: [
+                    { title: '用 Claude Code 10分钟复刻小游戏', reason: '用户对纯理论评测已产生疲劳。', point: '极度反差感 + 源码直接送，极易引发收藏和转发。' },
+                    { title: 'AI 编程工具如何改变商业模式？', reason: '适合公众号发布。针对商业焦虑。', point: '提供真实的搞钱案例和商业闭环逻辑。' }
+                ]
+            },
+            '2026-05-19': {
+                dateStr: '05月19日',
+                summary: '昨日热点主要围绕“独立开发者如何利用 AI 变现”，搞钱和副业成为核心痛点。',
+                topics: [
+                    { title: '盘点5个靠 AI 编码月入过万的产品', reason: '搞钱是第一生产力，完播率高。', point: '真实的收入数据刺激 + 低门槛介绍。' }
+                ]
+            }
+        };
+
+        function renderReportDetail(dateKey) {
+            var data = reportData[dateKey];
+            if (!data) return;
+
+            var container = document.getElementById('report-detail-container');
+            var topicsHtml = '';
+            for(var i = 0; i < data.topics.length; i++) {
+                var topic = data.topics[i];
+                topicsHtml += '<div class="border-2 border-border-soft rounded-2xl p-6 hover:border-matcha/50 transition-colors bg-white mb-6">' +
+                    '<h5 class="text-lg font-bold text-gray-800 mb-4 flex items-start gap-3">' +
+                        '<span class="w-6 h-6 rounded-full bg-matcha text-white flex items-center justify-center text-sm shrink-0">' + (i + 1) + '</span>' +
+                        topic.title +
+                    '</h5>' +
+                    '<div class="space-y-4 ml-9">' +
+                        '<div class="flex gap-3"><span class="text-xs font-bold px-3 py-1.5 bg-cheese text-yellow-900 rounded-lg whitespace-nowrap h-fit">为什么做</span><p class="text-sm text-gray-600 font-medium pt-1">' + topic.reason + '</p></div>' +
+                        '<div class="flex gap-3"><span class="text-xs font-bold px-3 py-1.5 bg-matcha-light text-matcha rounded-lg whitespace-nowrap h-fit">爆点分析</span><p class="text-sm text-gray-600 font-medium pt-1">' + topic.point + '</p></div>' +
+                    '</div></div>';
+            }
+
+            container.classList.remove('fade-in');
+            void container.offsetWidth; 
+            container.classList.add('fade-in');
+
+            container.innerHTML = '<div class="absolute -top-10 -right-10 w-40 h-40 bg-cheese/20 rounded-full blur-3xl pointer-events-none"></div>' +
+                '<div class="flex items-center gap-4 mb-8">' +
+                    '<div class="w-12 h-12 rounded-2xl bg-cheese flex items-center justify-center text-yellow-700 shadow-sm border border-cheese/50"><i data-lucide="lightbulb" class="w-6 h-6"></i></div>' +
+                    '<div><h3 class="text-2xl font-black text-gray-800">AI 选题洞察报告</h3><p class="text-sm font-medium text-gray-500 mt-1">基于 ' + data.dateStr + ' 全网 Top 10 热门内容生成</p></div>' +
+                '</div>' +
+                '<div class="bg-cream/50 p-5 rounded-2xl border border-cheese/40 mb-8">' +
+                    '<h4 class="text-base font-bold text-yellow-800 mb-3 flex items-center gap-2"><i data-lucide="flame" class="w-5 h-5 text-orange-400"></i>大盘热点总结</h4>' +
+                    '<p class="text-sm text-gray-700 leading-relaxed font-medium">' + data.summary + '</p>' +
+                '</div>' +
+                '<h4 class="text-xl font-black text-gray-800 mb-5 flex items-center gap-2"><i data-lucide="target" class="w-6 h-6 text-matcha"></i> 推荐选题方向</h4>' +
+                '<div>' + topicsHtml + '</div>';
+            
+            lucide.createIcons();
+        }
+
+        function switchReportView(viewType) {
+            var timelineView = document.getElementById('report-view-timeline');
+            var gridView = document.getElementById('report-view-grid');
+            var btnTimeline = document.getElementById('view-btn-timeline');
+            var btnGrid = document.getElementById('view-btn-grid');
+
+            if (viewType === 'timeline') {
+                timelineView.classList.remove('hidden'); timelineView.classList.add('flex');
+                gridView.classList.add('hidden'); gridView.classList.remove('grid');
+                btnTimeline.className = 'px-5 py-2 rounded-xl text-sm font-bold transition-all bg-cheese text-yellow-900 shadow-sm';
+                btnGrid.className = 'px-5 py-2 rounded-xl text-sm font-bold transition-all text-gray-500 hover:text-gray-800 hover:bg-cream';
+            } else {
+                timelineView.classList.add('hidden'); timelineView.classList.remove('flex');
+                gridView.classList.remove('hidden'); gridView.classList.add('grid');
+                btnGrid.className = 'px-5 py-2 rounded-xl text-sm font-bold transition-all bg-cheese text-yellow-900 shadow-sm';
+                btnTimeline.className = 'px-5 py-2 rounded-xl text-sm font-bold transition-all text-gray-500 hover:text-gray-800 hover:bg-cream';
+            }
+        }
+
+        function switchReportTimeline(clickedNode, dateKey) {
+            var container = document.getElementById('report-timeline');
+            container.querySelectorAll('.report-node').forEach(function(node) {
+                var icon = node.querySelector('.node-icon');
+                var card = node.querySelector('.node-card');
+                var title = card.querySelector('.text-base');
+                var badge = card.querySelector('.badge');
+                
+                icon.className = 'node-icon flex items-center justify-center w-12 h-12 rounded-full border-4 border-cream shrink-0 shadow-sm bg-white text-gray-400 z-10 relative';
+                icon.innerHTML = '<i data-lucide="calendar" class="w-5 h-5"></i>';
+                card.className = 'node-card flex-1 p-5 rounded-2xl border-2 transition-all border-border-soft bg-white hover:border-matcha/40 mt-1';
+                title.className = 'text-base font-bold text-gray-800';
+                if(badge) badge.className = 'badge px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-bold rounded-lg border border-gray-200';
+            });
+
+            var icon = clickedNode.querySelector('.node-icon');
+            var card = clickedNode.querySelector('.node-card');
+            var title = card.querySelector('.text-base');
+            var badge = card.querySelector('.badge');
+            
+            icon.className = 'node-icon flex items-center justify-center w-12 h-12 rounded-full border-4 border-cream shrink-0 shadow-md bg-matcha text-white z-10 relative';
+            icon.innerHTML = '<i data-lucide="sparkles" class="w-5 h-5"></i>';
+            card.className = 'node-card flex-1 p-5 rounded-2xl border-2 transition-all border-matcha bg-white shadow-sm mt-1';
+            title.className = 'text-base font-black text-matcha';
+            if(badge) badge.className = 'badge px-2 py-0.5 bg-matcha-light text-matcha text-xs font-bold rounded-lg border border-matcha/20';
+            
+            lucide.createIcons();
+            renderReportDetail(dateKey);
+        }
+
+        // ==========================================
+        // 4. 监控设置 - 动态增删逻辑
+        // ==========================================
+        function addPlatform() {
+            var input = document.getElementById('new-platform-input');
+            var val = input.value.trim();
+            if (!val) return;
+            
+            var list = document.getElementById('platform-list');
+            var span = document.createElement('span');
+            span.className = 'group inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-soft rounded-xl text-sm font-bold text-gray-700 shadow-sm cursor-pointer hover:border-red-300 hover:text-red-500 transition-colors';
+            span.onclick = function() { this.remove(); };
+            span.innerHTML = val + ' <i data-lucide="x" class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors"></i>';
+            
+            list.appendChild(span);
+            input.value = '';
+            lucide.createIcons();
+        }
+
+        function addKeyword() {
+            var input = document.getElementById('new-keyword-input');
+            var val = input.value.trim();
+            if (!val) return;
+            
+            var list = document.getElementById('keyword-list');
+            var span = document.createElement('span');
+            span.className = 'group inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-soft rounded-xl text-sm font-bold text-gray-700 shadow-sm cursor-pointer hover:border-red-300 hover:text-red-500 transition-colors';
+            span.onclick = function() { this.remove(); };
+            span.innerHTML = val + ' <i data-lucide="x" class="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors"></i>';
+            
+            list.appendChild(span);
+            input.value = '';
+            lucide.createIcons();
+        }
+
+        function addAccount() {
+            var platform = document.getElementById('new-account-platform').value;
+            var input = document.getElementById('new-account-input');
+            var val = input.value.trim();
+            if (!val) return;
+            
+            var list = document.getElementById('account-list');
+            var div = document.createElement('div');
+            div.className = 'account-item flex items-center justify-between p-4 bg-white border border-border-soft rounded-2xl shadow-sm';
+            
+            var platClass = 'bg-gray-100 text-gray-600 border-gray-200';
+            if(platform === '公众号') platClass = 'bg-[#E7F3E9] text-[#2BA245] border-[#2BA245]/20';
+            else if(platform === '小红书') platClass = 'bg-[#FDECECF0] text-[#FF2442] border-[#FF2442]/20';
+            else if(platform === 'B站') platClass = 'bg-[#FDF3DF] text-yellow-800 border-[#F7DCA0]/50';
+
+            div.innerHTML = '<div class="flex items-center gap-4">' +
+                '<span class="px-3 py-1 text-xs font-bold rounded-lg border ' + platClass + '">' + platform + '</span>' +
+                '<span class="text-base font-bold text-gray-800">' + val + '</span>' +
+            '</div>' +
+            '<button onclick="this.closest(\'.account-item\').remove()" class="text-gray-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>';
+            
+            list.appendChild(div);
+            input.value = '';
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+请你帮我完善监控设置相关的逻辑，我希望新增关键词的时候可以选择监控哪些平台接下来你首先帮我实现小红书平台根据关键词采集笔记的逻辑，其中获取小红书平台数据的接口信息如下，请你将采集后的数据保存到sqlite中进行持久化，方便数据的保存和后续分析：
+请求信息：curl --location --request POST 'https://cn8n.com/p2/xhs/search_note_web' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "type": 9,
+    "keyword": "大众",
+    "page": "1",
+    "sort": "comment_descending",
+    "note_type": "note",
+    "note_time": "day",
+    "searchId": "",
+    "sessionId": ""
+}'
+返回信息：
+export interface ApifoxModel {
+    /**
+     * 0为调用成功
+     */
+    code: number;
+    data: Data;
+    [property: string]: any;
+}
+
+export interface Data {
+    can_cut:                       boolean;
+    dqa_authorized_user_by_shared: boolean;
+    is_broad_query:                boolean;
+    items:                         Item[];
+    query_debug_info:              QueryDebugInfo;
+    query_intent:                  QueryIntent;
+    query_type:                    number;
+    request_dqa_instant:           boolean;
+    search_dqa_new_page_exp:       number;
+    search_pull_down_opt_exp:      number;
+    service_status:                string;
+    strategy_info:                 StrategyInfo;
+    [property: string]: any;
+}
+
+export interface Item {
+    hot_query:  HotQuery;
+    model_type: string;
+    note:       Note;
+    [property: string]: any;
+}
+
+export interface HotQuery {
+    queries:         Query[];
+    source:          number;
+    title:           string;
+    word_request_id: string;
+    [property: string]: any;
+}
+
+export interface Query {
+    cover:       string;
+    id:          string;
+    name:        string;
+    search_word: string;
+    [property: string]: any;
+}
+
+export interface Note {
+    abstract_show?:          string;
+    advanced_widgets_groups: AdvancedWidgetsGroups;
+    collected:               boolean;
+    /**
+     * 收藏数
+     */
+    collected_count: number;
+    /**
+     * 评论数
+     */
+    comments_count:    number;
+    corner_tag_info:   CornerTagInfo[];
+    cover_image_index: number;
+    debug_info_str:    string;
+    /**
+     * 笔记详情
+     */
+    desc:                 string;
+    extract_text_enabled: number;
+    geo_info:             GeoInfo;
+    has_music:            boolean;
+    id:                   string;
+    /**
+     * 图片链接列表
+     */
+    images_list:      ImagesList[];
+    interaction_area: InteractionArea;
+    last_update_time: number;
+    liked:            boolean;
+    /**
+     * 点赞数
+     */
+    liked_count:     number;
+    nice_count:      number;
+    niced:           boolean;
+    note_attributes: string[];
+    result_from:     string;
+    shared_count:    number;
+    tag_info:        TagInfo;
+    /**
+     * 发布时间
+     */
+    timestamp: number;
+    /**
+     * 标题
+     */
+    title:       string;
+    type:        string;
+    update_time: number;
+    /**
+     * 用户信息
+     */
+    user:                User;
+    video_info_v2?:      VideoInfoV2;
+    video_preview_type?: string;
+    widgets_context:     string;
+    [property: string]: any;
+}
+
+export interface AdvancedWidgetsGroups {
+    groups: Group[];
+    [property: string]: any;
+}
+
+export interface Group {
+    fetch_types: string[];
+    mode:        number;
+    [property: string]: any;
+}
+
+export interface CornerTagInfo {
+    icon:     string;
+    location: number;
+    poi_id:   string;
+    style:    number;
+    text:     string;
+    text_en:  string;
+    type:     string;
+    [property: string]: any;
+}
+
+export interface GeoInfo {
+    distance: string;
+    [property: string]: any;
+}
+
+export interface ImagesList {
+    fileid:                   string;
+    height:                   number;
+    need_load_original_image: boolean;
+    original:                 string;
+    trace_id:                 string;
+    url:                      string;
+    url_size_large:           string;
+    width:                    number;
+    [property: string]: any;
+}
+
+export interface InteractionArea {
+    status: boolean;
+    text:   string;
+    type:   number;
+    [property: string]: any;
+}
+
+export interface TagInfo {
+    title: string;
+    type:  string;
+    [property: string]: any;
+}
+
+/**
+ * 用户信息
+ */
+export interface User {
+    followed: boolean;
+    /**
+     * 头像链接
+     */
+    images: string;
+    live?:  Live;
+    /**
+     * 用户名
+     */
+    nickname:                      string;
+    red_id:                        string;
+    red_official_verified:         boolean;
+    red_official_verify_type:      number;
+    show_red_official_verify_icon: boolean;
+    track_duration:                number;
+    /**
+     * 用户id
+     */
+    userid: string;
+    [property: string]: any;
+}
+
+export interface Live {
+    has_draw:         boolean;
+    has_goods:        boolean;
+    has_red_packet:   boolean;
+    live_link:        string;
+    live_status:      number;
+    room_id:          string;
+    should_light_off: boolean;
+    start_time:       number;
+    user_id:          string;
+    [property: string]: any;
+}
+
+export interface VideoInfoV2 {
+    capa:     Capa;
+    consumer: Consumer;
+    image:    Image;
+    media:    Media;
+    [property: string]: any;
+}
+
+export interface Capa {
+    duration:       number;
+    frame_ts:       number;
+    is_upload:      boolean;
+    is_user_select: boolean;
+    [property: string]: any;
+}
+
+export interface Consumer {
+    can_super_resolution: boolean;
+    [property: string]: any;
+}
+
+export interface Image {
+    thumbnail:     string;
+    thumbnail_dim: string;
+    [property: string]: any;
+}
+
+export interface Media {
+    stream:     Stream;
+    user_level: number;
+    video:      Video;
+    video_id:   number;
+    [property: string]: any;
+}
+
+export interface Stream {
+    av1:  string[];
+    h264: H264[];
+    h265: H265[];
+    h266: string[];
+    [property: string]: any;
+}
+
+export interface H264 {
+    audio_bitrate:  number;
+    audio_channels: number;
+    audio_codec:    string;
+    audio_duration: number;
+    avg_bitrate:    number;
+    backup_urls:    string[];
+    default_stream: number;
+    duration:       number;
+    format:         string;
+    fps:            number;
+    hdr_type:       number;
+    height:         number;
+    master_url:     string;
+    opaque1:        H264Opaque1;
+    psnr:           number;
+    quality_type:   string;
+    rotate:         number;
+    size:           number;
+    sr:             number;
+    ssim:           number;
+    stream_desc:    string;
+    stream_type:    number;
+    token?:         string;
+    video_bitrate:  number;
+    video_codec:    string;
+    video_duration: number;
+    vmaf:           number;
+    volume:         number;
+    weight:         number;
+    width:          number;
+    [property: string]: any;
+}
+
+export interface H264Opaque1 {
+    didLoudnorm:   string;
+    pcdn_302_flag: string;
+    pcdn_supplier: string;
+    use_pcdn:      string;
+    [property: string]: any;
+}
+
+export interface H265 {
+    audio_bitrate:  number;
+    audio_channels: number;
+    audio_codec:    string;
+    audio_duration: number;
+    avg_bitrate:    number;
+    backup_urls:    string[];
+    default_stream: number;
+    duration:       number;
+    format:         string;
+    fps:            number;
+    hdr_type:       number;
+    height:         number;
+    master_url:     string;
+    opaque1:        H265Opaque1;
+    psnr:           number;
+    quality_type:   string;
+    rotate:         number;
+    size:           number;
+    sr:             number;
+    ssim:           number;
+    stream_desc:    string;
+    stream_type:    number;
+    token:          string;
+    video_bitrate:  number;
+    video_codec:    string;
+    video_duration: number;
+    vmaf:           number;
+    volume:         number;
+    weight:         number;
+    width:          number;
+    [property: string]: any;
+}
+
+export interface H265Opaque1 {
+    didLoudnorm:   string;
+    pcdn_302_flag: string;
+    pcdn_supplier: string;
+    use_pcdn:      string;
+    [property: string]: any;
+}
+
+export interface Video {
+    biz_id:       string;
+    biz_name:     number;
+    bound:        Bound[];
+    drm_type:     number;
+    duration:     number;
+    hdr_type:     number;
+    height:       number;
+    md5:          string;
+    opaque1:      VideoOpaque1;
+    stream_types: number[];
+    width:        number;
+    [property: string]: any;
+}
+
+export interface Bound {
+    h: number;
+    w: number;
+    x: number;
+    y: number;
+    [property: string]: any;
+}
+
+export interface VideoOpaque1 {
+    audioClsInfo:             string;
+    audioLevInfo:             string;
+    bottomAvgLuma:            string;
+    domestic:                 string;
+    hasHumanVoice:            string;
+    insertSubtitleLanguages?: string;
+    isSupportSubtitle:        string;
+    loudnorm:                 string;
+    rightAvgLuma:             string;
+    topAvgLuma:               string;
+    videoLanguage?:           string;
+    [property: string]: any;
+}
+
+export interface QueryDebugInfo {
+    is_forbidden: boolean;
+    [property: string]: any;
+}
+
+export interface QueryIntent {
+    goodsIntent:       number;
+    low_supply_intent: boolean;
+    search_ask_intent: boolean;
+    [property: string]: any;
+}
+
+export interface StrategyInfo {
+    query_average_impression_count: number;
+    query_can_guide_to_feed:        boolean;
+    [property: string]: any;
+}
+其中API_KEY为：sk-l7fiNaPOb8WJwuzcepGN8ZWpuPgNIMnxqfWExS9AdVyuJTwa
